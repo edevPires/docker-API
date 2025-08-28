@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+  # Serviço da API Node.js
+  api:
+    build: ./api
+    ports:
+      - "3000:3000"  # Porta externa:interna
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=loja
+      - DB_USER=admin
+      - DB_PASSWORD=senha123
+    depends_on:
+      - db
+    restart: unless-stopped
+    volumes:
+      - ./api:/app  # Hot reload durante desenvolvimento
+      - /app/node_modules  # Evita conflitos com node_modules local
+    networks:
+      - app-network
+
+  # Serviço do PostgreSQL
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: senha123
+      POSTGRES_DB: loja
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Script inicial
+    ports:
+      - "5432:5432"  # Para acessar o banco externamente (opcional)
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Opcional: PgAdmin para gerenciar o banco
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@email.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:  # Persiste os dados do banco
+
+networks:
+  app-network:
+    driver: bridge
